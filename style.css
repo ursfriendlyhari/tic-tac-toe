@@ -85,29 +85,31 @@ p{
 }
 .game-board {
     display: grid;
-    grid-template-columns: repeat(3, 88px);
-    grid-template-rows: repeat(3, 88px);
+    grid-template-columns: repeat(3, min(88px, 26vw));
+    grid-template-rows: repeat(3, min(88px, 26vw));
     gap: 10px;
     justify-content: center;
-}
-
-.game-board {
     position: relative;
 }
 
 .strike {
     position: absolute;
     height: 8px;
-    background: transparent;
-    border-radius: 6px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 8px;
     top: 0;
     left: 0;
-    transform-origin: 0 50%;
+    transform-origin: left center;
     opacity: 0;
-    transition: opacity 180ms ease, transform 360ms cubic-bezier(.2,.9,.2,1);
+    transition: none;
     pointer-events: none;
-    z-index: 2;
-    filter: drop-shadow(0 0 6px rgba(0,0,0,0.25));
+    z-index: 10;
+    filter: drop-shadow(0 0 18px rgba(255,255,255,0.35));
+}
+
+.strike-show {
+    opacity: 1;
+    animation: drawStrikeLine 360ms cubic-bezier(.18,.82,.24,1) forwards;
 }
 
 .strike-x {
@@ -118,6 +120,26 @@ p{
 .strike-o {
     background: linear-gradient(90deg, #ffd08a, #ff8a00);
     box-shadow: 0 0 8px rgba(255,138,0,0.95), 0 0 20px rgba(255,138,0,0.6);
+}
+
+@keyframes drawStrikeLine {
+    from {
+        transform: rotate(var(--strike-angle, 0deg)) scaleX(0);
+    }
+    to {
+        transform: rotate(var(--strike-angle, 0deg)) scaleX(1);
+    }
+}
+
+.game-board.locked .cell {
+    cursor: default;
+    pointer-events: none;
+}
+
+.game-board.locked .cell:hover {
+    transform: none;
+    background-color: #ffffff;
+    box-shadow: none;
 }
 .cell {
     background-color: #ffffff;
@@ -132,8 +154,9 @@ p{
 }
 
 .cell:hover {
-    background-color: #f0f0f0;
-    transform: scale(1.05);
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
 .cell.x {
@@ -143,19 +166,25 @@ p{
 .cell.o {
     color: #ff6600;
 }
-.cell:hover {
-    transform: translateY(-4px);
-    background: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-}
 
 /* winning cell pop animation */
 .cell.winner-pop {
-    transform: translateY(-18px) scale(1.12);
-    transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms ease, border-color 260ms ease;
+    transform-origin: center;
+    animation: winnerPulse 520ms cubic-bezier(.2,.9,.2,1);
     z-index: 3;
-    /* brighten the perimeter while popping */
     border-color: transparent;
+}
+
+@keyframes winnerPulse {
+    0% {
+        transform: scale(1);
+    }
+    45% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 .cell.x.winner-pop {

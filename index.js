@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentPlayer = "X";
     let firstPlayer = "X"; // Track who starts each match (alternates)
     let gameOver = false;
+    let restartTimer = null;
     let scores = {
         X: 0,
         O: 0,
@@ -172,10 +173,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
     }
 
-    function drawStrike(combination) {
-        const [a, , c] = combination;
-        const first = cells[a];
-        const last = cells[c];
+    function drawStrike(combination, winner) {
+        const first = cells[combination[0]];
+        const last = cells[combination[combination.length - 1]];
         const boardRect = boardEl.getBoundingClientRect();
         const r1 = first.getBoundingClientRect();
         const r2 = last.getBoundingClientRect();
@@ -189,43 +189,38 @@ document.addEventListener("DOMContentLoaded", () => {
         const dy = y2 - y1;
         const distance = Math.hypot(dx, dy);
         const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+        const strikeHeight = strikeEl.offsetHeight || 10;
 
-        // position the strike at the start point and set its length
+        strikeEl.classList.remove('strike-show', 'strike-x', 'strike-o');
         strikeEl.style.width = `${distance}px`;
         strikeEl.style.left = `${x1}px`;
-        strikeEl.style.top = `${y1}px`;
-
-        // set initial transform with zero scale so it appears to grow from the start
+        strikeEl.style.top = `${y1 - strikeHeight / 2}px`;
+        strikeEl.style.setProperty('--strike-angle', `${angle}deg`);
         strikeEl.style.transform = `rotate(${angle}deg) scaleX(0)`;
-        strikeEl.style.opacity = '1';
-        strikeEl.classList.remove('strike-x', 'strike-o');
-        strikeEl.classList.add(currentPlayer === 'X' ? 'strike-x' : 'strike-o');
+        strikeEl.classList.add(winner === 'X' ? 'strike-x' : 'strike-o');
 
-        // force layout then animate to full length using scaleX
-        // requestAnimationFrame ensures the browser renders the initial state
+        void strikeEl.offsetWidth;
         requestAnimationFrame(() => {
-            strikeEl.style.transform = `rotate(${angle}deg) scaleX(1)`;
+            strikeEl.classList.add('strike-show');
         });
-
-        // return angle and distance so caller can schedule further animations
-        return { angle, distance };
     }
 
     function startNewGame() {
+        clearTimeout(restartTimer);
+        restartTimer = null;
         board = Array(9).fill("");
         currentPlayer = firstPlayer; // Start with whoever's turn it is
         gameOver = false;
+        boardEl.classList.remove('locked');
 
         cells.forEach((cell) => {
             cell.textContent = "";
             cell.classList.remove("x", "o", "winner-pop");
         });
 
-        // hide any previous strike line and reset transform so it can animate again
-        strikeEl.style.opacity = '0';
+        strikeEl.classList.remove('strike-show', 'strike-x', 'strike-o');
         strikeEl.style.width = '0px';
         strikeEl.style.transform = 'scaleX(0)';
-        strikeEl.classList.remove('strike-x', 'strike-o');
 
         setMessage(`Click on a cell to make your move. Player ${firstPlayer} goes first.`);
         
@@ -233,11 +228,12 @@ document.addEventListener("DOMContentLoaded", () => {
         firstPlayer = firstPlayer === "X" ? "O" : "X";
     }
 
-    function finishRound(message, autoStartDelay = 1200) {
+    function finishRound(message, autoStartDelay = 900) {
         gameOver = true;
+        boardEl.classList.add('locked');
         setMessage(`${message} Starting a new game...`);
 
-        setTimeout(startNewGame, autoStartDelay);
+        restartTimer = setTimeout(startNewGame, autoStartDelay);
     }
 
     function handleCellClick(event) {
@@ -255,29 +251,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const winningCombo = checkWinner();
         if (winningCombo) {
+            const WIN_LINE_MS = 360;
+            const WIN_RESTART_MS = 950;
+
+            gameOver = true;
+            boardEl.classList.add('locked');
             scores[currentPlayer] += 1;
             updateScoreboard();
-            // play distinct win sound for the winner
+            setMessage(`Player ${currentPlayer} wins! Starting a new game...`);
             playWinSound(currentPlayer);
-            const { angle } = drawStrike(winningCombo) || {};
+            drawStrike(winningCombo, currentPlayer);
 
-            // durations (ms) should match or be slightly longer than CSS transitions
-            const GROW_MS = 380;
-            const POP_MS = 260;
-            const EXTRA_AFTER_POP = 300; // time before starting new round after pop
-
-            // schedule pop of the winning cells (not the strike line)
             setTimeout(() => {
                 winningCombo.forEach((idx) => {
                     const c = cells[idx];
                     c.classList.add('winner-pop');
                 });
-            }, GROW_MS + 40);
+            }, WIN_LINE_MS);
 
-            // after pop completes, start finishRound which triggers next game after EXTRA_AFTER_POP
-            setTimeout(() => {
-                finishRound(`Player ${currentPlayer} wins!`, EXTRA_AFTER_POP);
-            }, GROW_MS + POP_MS + 80);
+            restartTimer = setTimeout(startNewGame, WIN_RESTART_MS);
 
             return;
         }
