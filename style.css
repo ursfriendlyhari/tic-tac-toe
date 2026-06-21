@@ -90,6 +90,35 @@ p{
     gap: 10px;
     justify-content: center;
 }
+
+.game-board {
+    position: relative;
+}
+
+.strike {
+    position: absolute;
+    height: 8px;
+    background: transparent;
+    border-radius: 6px;
+    top: 0;
+    left: 0;
+    transform-origin: 0 50%;
+    opacity: 0;
+    transition: opacity 180ms ease, transform 360ms cubic-bezier(.2,.9,.2,1);
+    pointer-events: none;
+    z-index: 2;
+    filter: drop-shadow(0 0 6px rgba(0,0,0,0.25));
+}
+
+.strike-x {
+    background: linear-gradient(90deg, #79d1ff, #0aa3ff);
+    box-shadow: 0 0 8px rgba(10,163,255,0.9), 0 0 20px rgba(10,163,255,0.6);
+}
+
+.strike-o {
+    background: linear-gradient(90deg, #ffd08a, #ff8a00);
+    box-shadow: 0 0 8px rgba(255,138,0,0.95), 0 0 20px rgba(255,138,0,0.6);
+}
 .cell {
     background-color: #ffffff;
     border: 2px solid #6e6e6e;
@@ -99,7 +128,7 @@ p{
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease, border-color 180ms ease;
 }
 
 .cell:hover {
@@ -118,6 +147,25 @@ p{
     transform: translateY(-4px);
     background: rgba(255, 255, 255, 0.4);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* winning cell pop animation */
+.cell.winner-pop {
+    transform: translateY(-18px) scale(1.12);
+    transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms ease, border-color 260ms ease;
+    z-index: 3;
+    /* brighten the perimeter while popping */
+    border-color: transparent;
+}
+
+.cell.x.winner-pop {
+    border-color: rgba(10,163,255,0.95);
+    box-shadow: 0 12px 30px rgba(10,163,255,0.22), 0 0 30px rgba(10,163,255,0.28), inset 0 0 10px rgba(10,163,255,0.18);
+}
+
+.cell.o.winner-pop {
+    border-color: rgba(255,138,0,0.95);
+    box-shadow: 0 12px 30px rgba(255,138,0,0.22), 0 0 30px rgba(255,138,0,0.28), inset 0 0 10px rgba(255,138,0,0.18);
 }
 .button-container {
     display: flex;
